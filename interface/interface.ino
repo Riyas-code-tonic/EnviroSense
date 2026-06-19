@@ -2,14 +2,20 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME680.h>
 
+#define SDA_PIN 6
+#define SCL_PIN 7
 #define SEALEVELPRESSURE_HPA (1013.25)
 
-Adafruit_BME680 bme; // I2C
+Adafruit_BME680 bme;
 
 void setup() {
   Serial.begin(115200);
 
-  if (!bme.begin()) {
+  // Initialize I2C on GPIO6 and GPIO7
+  Wire.begin(SDA_PIN, SCL_PIN);
+
+  // Initialize BME680
+  if (!bme.begin()) {     // If your sensor uses address 0x77, use bme.begin(0x77)
     Serial.println("Could not find a valid BME680 sensor!");
     while (1);
   }
@@ -21,7 +27,9 @@ void setup() {
   bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
 
   // Gas sensor heater
-  bme.setGasHeater(320, 150); // 320°C for 150 ms
+  bme.setGasHeater(320, 150);
+
+  Serial.println("BME680 initialized!");
 }
 
 void loop() {
@@ -47,10 +55,9 @@ void loop() {
   Serial.println(" KOhms");
 
   Serial.print("Approx. Altitude = ");
-  Serial.print(
-      bme.readAltitude(SEALEVELPRESSURE_HPA));
+  Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
   Serial.println(" m");
 
   Serial.println();
-  delay(2000);
+  delay(100);
 }
