@@ -61,10 +61,4 @@ EnviroSense is suitable for hobbyists, students, and developers who want a compa
 **License**
 - This repository does not currently include a license file. If you want it to be open-source, add a `LICENSE` (MIT, Apache-2.0, etc.) and update this README.
 
----
-
-If you'd like, I can:
-- add a short wiring diagram section showing the I2C and sensor connections,
-- extract a list of exact library versions used,
-- or generate a sample Node-RED flow for the default HTTP/MQTT outputs.
 
