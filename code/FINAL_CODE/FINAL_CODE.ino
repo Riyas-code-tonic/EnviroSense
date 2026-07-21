@@ -18,8 +18,8 @@
 
 #define SEALEVELPRESSURE_HPA 1013.25
 
-const char* ssid = "HELLO";
-const char* password = "12345678";
+const char* ssid = "Raj_4g";
+const char* password = "55556666";
 
 // Replace with your Render URL
 const char* serverURL = "https://envirosense-backend.onrender.com/sensor";
@@ -61,8 +61,8 @@ void setup()
     }
 
     display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
+    // display.setTextSize(1);
+    // display.setTextColor(SSD1306_WHITE);
 
     if (!bme.begin())
     {

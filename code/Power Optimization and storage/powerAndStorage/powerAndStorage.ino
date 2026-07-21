@@ -28,7 +28,7 @@ const char* dataFile = "/env_data.csv";
 
 // --- Deep Sleep & LittleFS Settings ---
 #define uS_TO_S_FACTOR 1000000ULL 
-#define TIME_TO_SLEEP  60          // Sleep for 60 seconds
+#define TIME_TO_SLEEP  6          // Sleep for 60 seconds
 
 void manageLogFile() {
   if (!LittleFS.exists(dataFile))
@@ -64,7 +64,7 @@ void setup() {
   Serial.begin(115200); 
   delay(500);       // Give the computer half second to recognize the native USB port
 
-  Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.begin();
 
   // 2. Initialize LittleFS
   if (!LittleFS.begin(true)) {
@@ -92,7 +92,7 @@ void setup() {
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 20);
-    display.println("Initializing...");
+    display.println("Calibrating...");
     display.display();
   }
 
@@ -171,11 +171,11 @@ void setup() {
   }
 
   // 6. Go to Deep Sleep
-  delay(10000); 
+  delay(5000); 
   
   Serial.println("Going to sleep now...");
-  display.clearDisplay(); // Turn off OLED to save power
-  display.display();
+  // display.clearDisplay(); // Turn off OLED to save power
+  // display.display();
   
   Serial.flush(); 
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
