@@ -285,7 +285,7 @@
   </div>
 
   <script>
-    // ==================================================
+ 
 
     const SENSOR_RANGES = {
       gas: { min: 0, max: 120 },
@@ -334,49 +334,42 @@
       const offset = circumference - (percentage * circumference);
       document.getElementById(`ring-${feed}`).style.strokeDashoffset = offset;
     }
+async function loadData() {
+  try {
+    const response = await fetch("/api/data");
 
-    async function loadData() {
-      try {
-        const feeds = ['gas', 'humidity', 'pressure', 'temperature'];
-        const payload = {};
-
-        // Fetch data from Adafruit IO for each feed
-       const res = await fetch("/api/data");
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch data: ${res.status}`);
-      }
-      
-      const payload = await res.json();
-
-        // Update Gauges with latest values
-        ['gas', 'humidity', 'pressure', 'temperature'].forEach(feed => {
-          if (payload[feed] && payload[feed].length > 0) {
-            const latest = payload[feed][payload[feed].length - 1].value;
-            setGaugeValue(feed, parseFloat(latest));
-          }
-        });
-
-        // Update Chart with historical data
-        if (payload.temperature && payload.temperature.length > 0) {
-          // Format timestamps for chart labels
-          chart.data.labels = payload.temperature.map(d => {
-            const date = new Date(d.created_at);
-            return date.toLocaleTimeString();
-          });
-          
-          chart.data.datasets[0].data = payload.pressure ? payload.pressure.map(d => parseFloat(d.value)) : [];
-          chart.data.datasets[1].data = payload.humidity ? payload.humidity.map(d => parseFloat(d.value)) : [];
-          chart.data.datasets[2].data = payload.gas ? payload.gas.map(d => parseFloat(d.value)) : [];
-          chart.data.datasets[3].data = payload.temperature.map(d => parseFloat(d.value));
-          chart.update();
-        }
-
-      } catch (err) {
-        console.error('Error fetching from Adafruit IO:', err);
-        alert('⚠️ Failed to fetch data. Check your username and API key.');
-      }
+    if (!response.ok) {
+      throw new Error("Failed to fetch API");
     }
+
+    const payload = await response.json();
+
+    // Update Gauges
+    ["gas", "humidity", "pressure", "temperature"].forEach(feed => {
+      if (payload[feed] && payload[feed].length > 0) {
+        const latest = payload[feed][payload[feed].length - 1].value;
+        setGaugeValue(feed, parseFloat(latest));
+      }
+    });
+
+    // Update Chart
+    if (payload.temperature && payload.temperature.length > 0) {
+      chart.data.labels = payload.temperature.map(d =>
+        new Date(d.created_at).toLocaleTimeString()
+      );
+
+      chart.data.datasets[0].data = payload.pressure.map(d => parseFloat(d.value));
+      chart.data.datasets[1].data = payload.humidity.map(d => parseFloat(d.value));
+      chart.data.datasets[2].data = payload.gas.map(d => parseFloat(d.value));
+      chart.data.datasets[3].data = payload.temperature.map(d => parseFloat(d.value));
+
+      chart.update();
+    }
+
+  } catch (err) {
+    console.error("Error:", err);
+  }
+}
 
     // Theme Toggle Function
     function toggleTheme() {
