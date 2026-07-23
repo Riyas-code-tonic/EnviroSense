@@ -285,9 +285,6 @@
   </div>
 
   <script>
-    // ===== ADAFRUIT IO CREDENTIALS - UPDATE THESE =====
-    const AIO_USERNAME = "YOUR_USERNAME"; // Replace with your Adafruit IO username
-    const AIO_KEY = "YOUR_API_KEY"; // Replace with your Adafruit IO API key
     // ==================================================
 
     const SENSOR_RANGES = {
@@ -344,20 +341,13 @@
         const payload = {};
 
         // Fetch data from Adafruit IO for each feed
-        for (let feed of feeds) {
-          const res = await fetch(
-            `https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${feed}/data?limit=50`,
-            {
-              headers: { 'X-AIO-Key': AIO_KEY }
-            }
-          );
+       const res = await fetch("/api/data");
 
-          if (!res.ok) {
-            throw new Error(`Failed to fetch ${feed}: ${res.status}`);
-          }
-
-          payload[feed] = await res.json();
-        }
+      if (!res.ok) {
+        throw new Error(`Failed to fetch data: ${res.status}`);
+      }
+      
+      const payload = await res.json();
 
         // Update Gauges with latest values
         ['gas', 'humidity', 'pressure', 'temperature'].forEach(feed => {
