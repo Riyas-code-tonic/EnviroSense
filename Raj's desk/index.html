@@ -277,7 +277,7 @@
       <p>
         Designed and made by <strong>Rajnarayan Hazra</strong>, <strong>Riya Pailwan</strong>, and <strong>Harsh Patange</strong>.
       </p>
-      <a href="https://github.com/your-username/your-repo" target="_blank" rel="noopener noreferrer">
+      <a href="https://github.com/Riyas-code-tonic/EnviroSense" target="_blank" rel="noopener noreferrer">
         For more info ➔
       </a>
     </footer>
@@ -285,6 +285,11 @@
   </div>
 
   <script>
+    // ===== ADAFRUIT IO CREDENTIALS - UPDATE THESE =====
+    const AIO_USERNAME = "YOUR_USERNAME"; // Replace with your Adafruit IO username
+    const AIO_KEY = "YOUR_API_KEY"; // Replace with your Adafruit IO API key
+    // ==================================================
+
     const SENSOR_RANGES = {
       gas: { min: 0, max: 120 },
       humidity: { min: 0, max: 100 },
@@ -335,29 +340,51 @@
 
     async function loadData() {
       try {
-        const res = await fetch('/api/data');
-        const payload = await res.json();
+        const feeds = ['gas', 'humidity', 'pressure', 'temperature'];
+        const payload = {};
 
-        // Update Gauges
+        // Fetch data from Adafruit IO for each feed
+        for (let feed of feeds) {
+          const res = await fetch(
+            `https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${feed}/data?limit=50`,
+            {
+              headers: { 'X-AIO-Key': AIO_KEY }
+            }
+          );
+
+          if (!res.ok) {
+            throw new Error(`Failed to fetch ${feed}: ${res.status}`);
+          }
+
+          payload[feed] = await res.json();
+        }
+
+        // Update Gauges with latest values
         ['gas', 'humidity', 'pressure', 'temperature'].forEach(feed => {
           if (payload[feed] && payload[feed].length > 0) {
             const latest = payload[feed][payload[feed].length - 1].value;
-            setGaugeValue(feed, latest);
+            setGaugeValue(feed, parseFloat(latest));
           }
         });
 
-        // Update Chart
+        // Update Chart with historical data
         if (payload.temperature && payload.temperature.length > 0) {
-          chart.data.labels = payload.temperature.map(d => d.time);
-          chart.data.datasets[0].data = payload.pressure ? payload.pressure.map(d => d.value) : [];
-          chart.data.datasets[1].data = payload.humidity ? payload.humidity.map(d => d.value) : [];
-          chart.data.datasets[2].data = payload.gas ? payload.gas.map(d => d.value) : [];
-          chart.data.datasets[3].data = payload.temperature.map(d => d.value);
+          // Format timestamps for chart labels
+          chart.data.labels = payload.temperature.map(d => {
+            const date = new Date(d.created_at);
+            return date.toLocaleTimeString();
+          });
+          
+          chart.data.datasets[0].data = payload.pressure ? payload.pressure.map(d => parseFloat(d.value)) : [];
+          chart.data.datasets[1].data = payload.humidity ? payload.humidity.map(d => parseFloat(d.value)) : [];
+          chart.data.datasets[2].data = payload.gas ? payload.gas.map(d => parseFloat(d.value)) : [];
+          chart.data.datasets[3].data = payload.temperature.map(d => parseFloat(d.value));
           chart.update();
         }
 
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
+        console.error('Error fetching from Adafruit IO:', err);
+        alert('⚠️ Failed to fetch data. Check your username and API key.');
       }
     }
 
@@ -393,7 +420,7 @@
 
     initChart();
     loadData();
-    setInterval(loadData, 15000); // Poll every 15 seconds
+    setInterval(loadData, 30000); // Poll every 30 seconds
   </script>
 </body>
 </html>
