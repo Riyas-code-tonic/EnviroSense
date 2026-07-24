@@ -417,6 +417,30 @@
       }, items[0]);
     }
 
+    function sortByTimestamp(items) {
+      if (!Array.isArray(items)) return [];
+
+      return [...items]
+        .filter(item => item && item.created_at && item.value != null)
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    }
+
+    function formatTimestamp(value) {
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return value;
+      }
+
+      return date.toLocaleString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        day: '2-digit',
+        month: '2-digit'
+      });
+    }
+
     async function loadData() {
       try {
         const response = await fetch("/api/data");
@@ -440,16 +464,16 @@
     if (payload.temperature && payload.temperature.length > 0) {
       const isMobile = window.matchMedia('(max-width: 640px)').matches;
       const maxPoints = isMobile ? 10 : 50;
-      const chartPoints = payload.temperature.slice(-maxPoints);
+      const sortedTemperature = sortByTimestamp(payload.temperature);
+      const chartPoints = sortedTemperature.slice(-maxPoints);
+      const referenceTimes = chartPoints.map(d => d.created_at);
 
-      const labels = chartPoints.map(d =>
-        new Date(d.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      );
+      const labels = referenceTimes.map(time => formatTimestamp(time));
 
       chart.data.labels = labels;
-      chart.data.datasets[0].data = payload.pressure.slice(-maxPoints).map(d => parseFloat(d.value));
-      chart.data.datasets[1].data = payload.humidity.slice(-maxPoints).map(d => parseFloat(d.value));
-      chart.data.datasets[2].data = payload.gas.slice(-maxPoints).map(d => parseFloat(d.value));
+      chart.data.datasets[0].data = sortByTimestamp(payload.pressure).filter(item => referenceTimes.includes(item.created_at)).map(d => parseFloat(d.value));
+      chart.data.datasets[1].data = sortByTimestamp(payload.humidity).filter(item => referenceTimes.includes(item.created_at)).map(d => parseFloat(d.value));
+      chart.data.datasets[2].data = sortByTimestamp(payload.gas).filter(item => referenceTimes.includes(item.created_at)).map(d => parseFloat(d.value));
       chart.data.datasets[3].data = chartPoints.map(d => parseFloat(d.value));
 
       chart.update();
