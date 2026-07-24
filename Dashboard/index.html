@@ -425,6 +425,30 @@
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     }
 
+    function buildAlignedSeries(feedData, referenceTimes) {
+      const sortedFeed = sortByTimestamp(feedData);
+      const values = [];
+      let index = 0;
+
+      referenceTimes.forEach(time => {
+        const targetTime = new Date(time).getTime();
+
+        while (index < sortedFeed.length) {
+          const currentTime = new Date(sortedFeed[index].created_at).getTime();
+          if (currentTime <= targetTime) {
+            index += 1;
+          } else {
+            break;
+          }
+        }
+
+        const currentItem = sortedFeed[index - 1];
+        values.push(currentItem ? parseFloat(currentItem.value) : null);
+      });
+
+      return values;
+    }
+
     function formatTimestamp(value) {
       const date = new Date(value);
 
@@ -471,9 +495,9 @@
       const labels = referenceTimes.map(time => formatTimestamp(time));
 
       chart.data.labels = labels;
-      chart.data.datasets[0].data = sortByTimestamp(payload.pressure).filter(item => referenceTimes.includes(item.created_at)).map(d => parseFloat(d.value));
-      chart.data.datasets[1].data = sortByTimestamp(payload.humidity).filter(item => referenceTimes.includes(item.created_at)).map(d => parseFloat(d.value));
-      chart.data.datasets[2].data = sortByTimestamp(payload.gas).filter(item => referenceTimes.includes(item.created_at)).map(d => parseFloat(d.value));
+      chart.data.datasets[0].data = buildAlignedSeries(payload.pressure, referenceTimes);
+      chart.data.datasets[1].data = buildAlignedSeries(payload.humidity, referenceTimes);
+      chart.data.datasets[2].data = buildAlignedSeries(payload.gas, referenceTimes);
       chart.data.datasets[3].data = chartPoints.map(d => parseFloat(d.value));
 
       chart.update();
