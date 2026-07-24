@@ -137,6 +137,7 @@ The hardware combines the ESP32 with the BME680 environmental sensor to continuo
 <div align="center">
 <img src="./Images/Hardware Case/Hardware.jpeg" width="500">
 </div>
+
 ---
 
 # 📐 PCB Design
@@ -144,6 +145,7 @@ The hardware combines the ESP32 with the BME680 environmental sensor to continuo
 To improve reliability and move beyond a breadboard prototype, a dedicated PCB was designed for the system. The custom PCB provides cleaner connections, better durability, and a more compact implementation, making the overall design easier to assemble, maintain, and deploy.
 <div align="center">
 <img src="./Images/PCB/FINALPCB.jpeg" width="500"> </div>
+
 ---
 
 # 🚧 Challenges
@@ -184,7 +186,6 @@ Although EnviroSense already provides a comprehensive environmental monitoring s
 
 If you found this project interesting, consider giving the repository a **Star ⭐**. Your support motivates us to continue improving EnviroSense and building more innovative open-source projects.
 
----
 
 <div align="center">
 
