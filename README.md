@@ -95,29 +95,9 @@ To improve efficiency and reduce unnecessary power consumption, the firmware inc
 
 The overall workflow can be summarized as follows:
 
-```
-        BME680 Environmental Sensor
-                   │
-                   ▼
-        ESP32 Microcontroller
-                   │
-      Reads & Processes Sensor Data
-                   │
-                   ▼
-           Wi-Fi + MQTT Protocol
-                   │
-                   ▼
-            Adafruit IO Cloud
-                   │
-         ┌─────────┴──────────┐
-         ▼                    ▼
-  Web Dashboard         Email Alerts
-         ▲
-         │
- Local OLED Display
-```
+<img src="./Images/Envirosense Architecture.png">
 
-By combining cloud communication, local visualization, intelligent notifications, and energy-efficient firmware, EnviroSense delivers a reliable environmental monitoring solution that remains practical for both everyday use and long-term IoT deployments.
+EnviroSense delivers a reliable environmental monitoring solution that remains practical for both everyday use and long-term IoT deployments.
 
 ---
 
@@ -145,12 +125,15 @@ By combining cloud communication, local visualization, intelligent notifications
 
 The hardware combines the ESP32 with the BME680 environmental sensor to continuously monitor atmospheric conditions. An integrated OLED display allows nearby users to view live sensor readings directly from the device, while the ESP32 manages wireless communication, cloud connectivity, email notifications, and power-efficient operation within a compact embedded system.
 
+<img src="./Images/Hardware Case/Hardware.jpeg" width="500">
+
 ---
 
 # 📐 PCB Design
 
 To improve reliability and move beyond a breadboard prototype, a dedicated PCB was designed for the system. The custom PCB provides cleaner connections, better durability, and a more compact implementation, making the overall design easier to assemble, maintain, and deploy.
-
+<div align="center">
+<img src="./Images/PCB/FINALPCB.jpeg" width="500"> </div>
 ---
 
 # 🚧 Challenges
