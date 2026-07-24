@@ -12,7 +12,7 @@
       --card-bg: #ffffff;
       --border-color: #e2e8f0;
       --text-primary: #010308;
-      --text-secondary: #1f2a3a;
+      --text-secondary: #0a121d;
       --ring-bg: #e2e8f0;
     }
 
@@ -111,6 +111,18 @@
       transition: background-color 0.3s ease, border-color 0.3s ease;
     }
 
+    .chart-card {
+      overflow: hidden;
+      padding: 1rem 1rem 1.25rem;
+    }
+
+    .chart-card canvas {
+      display: block;
+      width: 100%;
+      height: 320px;
+      min-height: 320px;
+    }
+
     .card {
       display: flex;
       flex-direction: column;
@@ -140,7 +152,7 @@
     circle { fill: none; stroke-width: 12; stroke-linecap: round; }
     .bg-ring { stroke: var(--ring-bg); }
     .val-ring {
-      stroke: #80ed99;
+      stroke: #066b2c;
       stroke-dasharray: 377;
       stroke-dashoffset: 377;
       transition: stroke-dashoffset 0.8s ease;
@@ -181,6 +193,28 @@
 
     @media (min-width: 640px) {
       footer { flex-direction: row; justify-content: space-between; }
+    }
+
+    @media (min-width: 1024px) {
+      .chart-card {
+        padding: 1.25rem 1.25rem 1.5rem;
+      }
+
+      .chart-card canvas {
+        height: 380px;
+        min-height: 380px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .chart-card {
+        padding: 0.75rem;
+      }
+
+      .chart-card canvas {
+        min-height: 220px;
+        height: 220px;
+      }
     }
   </style>
 </head>
@@ -307,17 +341,53 @@
         data: {
           labels: [],
           datasets: [
-            { label: 'Pressure', borderColor: '#80ed99', borderWidth: 1.5, data: [], pointRadius: 0 },
-            { label: 'Humidity', borderColor: '#ffb703', borderWidth: 1.5, data: [], pointRadius: 0 },
-            { label: 'Gas', borderColor: '#e63946', borderWidth: 1.5, data: [], pointRadius: 0 },
-            { label: 'Temperature', borderColor: '#38bdf8', borderWidth: 1.5, data: [], pointRadius: 0 }
+            { label: 'Pressure', borderColor: '#80ed99', borderWidth: 2, data: [], pointRadius: 3, pointHoverRadius: 7, pointHitRadius: 12, pointBackgroundColor: '#80ed99', pointBorderColor: '#ffffff', pointBorderWidth: 1 },
+            { label: 'Humidity', borderColor: '#ffb703', borderWidth: 2, data: [], pointRadius: 3, pointHoverRadius: 7, pointHitRadius: 12, pointBackgroundColor: '#ffb703', pointBorderColor: '#ffffff', pointBorderWidth: 1 },
+            { label: 'Gas', borderColor: '#e63946', borderWidth: 2, data: [], pointRadius: 3, pointHoverRadius: 7, pointHitRadius: 12, pointBackgroundColor: '#e63946', pointBorderColor: '#ffffff', pointBorderWidth: 1 },
+            { label: 'Temperature', borderColor: '#38bdf8', borderWidth: 2, data: [], pointRadius: 3, pointHoverRadius: 7, pointHitRadius: 12, pointBackgroundColor: '#38bdf8', pointBorderColor: '#ffffff', pointBorderWidth: 1 }
           ]
         },
         options: {
           responsive: true,
-          plugins: { legend: { labels: { color: tickColor, boxWidth: 12 } } },
+          maintainAspectRatio: false,
+          animation: { duration: 0 },
+          interaction: { mode: 'index', intersect: false },
+          hover: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: tickColor,
+                boxWidth: 12,
+                padding: 12,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${context.parsed.y}`;
+                }
+              }
+            }
+          },
+          elements: {
+            line: { tension: 0.2 },
+            point: { radius: 3, hoverRadius: 5 }
+          },
           scales: {
-            x: { grid: { color: gridColor }, ticks: { color: tickColor } },
+            x: {
+              grid: { color: gridColor },
+              ticks: {
+                color: tickColor,
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 8
+              },
+              reverse: true
+            },
             y: { grid: { color: gridColor }, ticks: { color: tickColor } }
           }
         }
@@ -334,34 +404,54 @@
       const offset = circumference - (percentage * circumference);
       document.getElementById(`ring-${feed}`).style.strokeDashoffset = offset;
     }
-async function loadData() {
-  try {
-    const response = await fetch("/api/data");
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch API");
+    function getLatestReading(items) {
+      if (!Array.isArray(items) || items.length === 0) return null;
+
+      return items.reduce((latest, current) => {
+        if (!current || current.value == null) return latest;
+
+        const latestTime = latest ? new Date(latest.created_at || 0).getTime() : -Infinity;
+        const currentTime = current ? new Date(current.created_at || 0).getTime() : -Infinity;
+
+        return currentTime > latestTime ? current : latest;
+      }, items[0]);
     }
 
-    const payload = await response.json();
+    async function loadData() {
+      try {
+        const response = await fetch("/api/data");
 
-    // Update Gauges
-    ["gas", "humidity", "pressure", "temperature"].forEach(feed => {
-      if (payload[feed] && payload[feed].length > 0) {
-        const latest = payload[feed][payload[feed].length - 1].value;
-        setGaugeValue(feed, parseFloat(latest));
-      }
-    });
+        if (!response.ok) {
+          throw new Error("Failed to fetch API");
+        }
+
+        const payload = await response.json();
+
+        // Update Gauges
+        ["gas", "humidity", "pressure", "temperature"].forEach(feed => {
+          const latestReading = getLatestReading(payload[feed]);
+
+          if (latestReading) {
+            setGaugeValue(feed, parseFloat(latestReading.value));
+          }
+        });
 
     // Update Chart
     if (payload.temperature && payload.temperature.length > 0) {
-      chart.data.labels = payload.temperature.map(d =>
-        new Date(d.created_at).toLocaleTimeString()
+      const isMobile = window.matchMedia('(max-width: 640px)').matches;
+      const maxPoints = isMobile ? 10 : 50;
+      const chartPoints = payload.temperature.slice(-maxPoints);
+
+      const labels = chartPoints.map(d =>
+        new Date(d.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       );
 
-      chart.data.datasets[0].data = payload.pressure.map(d => parseFloat(d.value));
-      chart.data.datasets[1].data = payload.humidity.map(d => parseFloat(d.value));
-      chart.data.datasets[2].data = payload.gas.map(d => parseFloat(d.value));
-      chart.data.datasets[3].data = payload.temperature.map(d => parseFloat(d.value));
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = payload.pressure.slice(-maxPoints).map(d => parseFloat(d.value));
+      chart.data.datasets[1].data = payload.humidity.slice(-maxPoints).map(d => parseFloat(d.value));
+      chart.data.datasets[2].data = payload.gas.slice(-maxPoints).map(d => parseFloat(d.value));
+      chart.data.datasets[3].data = chartPoints.map(d => parseFloat(d.value));
 
       chart.update();
     }
@@ -403,7 +493,10 @@ async function loadData() {
 
     initChart();
     loadData();
-    setInterval(loadData, 3000); // Poll every 3 seconds
+    window.addEventListener('resize', () => {
+      if (chart) chart.resize();
+    });
+    setInterval(loadData, 15000); // Poll every 15 seconds
   </script>
 </body>
 </html>
