@@ -176,8 +176,8 @@ Although EnviroSense already provides a comprehensive environmental monitoring s
 
 # 👨‍💻 Contributors
 
-- **Rajnarayan Hazra**
 - **Riya Pailwan**
+- **Rajnarayan Hazra**
 - **Harsh Patange**
 
 ---
