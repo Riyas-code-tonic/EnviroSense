@@ -1,16 +1,26 @@
 <div align="center">
 
-<img src="Images/Logo.png" width="120"/>
+<table>
+<tr>
 
-# 🌳 𝓔𝓷𝓿𝓲𝓻𝓸𝑺𝒆𝒏𝒔𝒆
+<td>
+<img src="Images/Logo.png" width="90">
+</td>
+
+<td>
+
+# 𝓔𝓷𝓿𝓲𝓻𝓸𝑺𝒆𝒏𝒔𝒆
+
+</td>
+
+</tr>
+</table>
 
 ### Smart IoT Weather & Air Quality Monitoring System
 
 *Turning real-time environmental data into meaningful insights.*
 
-<br>
-
-![ESP32](https://img.shields.io/badge/ESP32-IoT-red?style=for-the-badge)
+![ESP32](https://img.shields.io/badge/ESP32-Microcontroller-red?style=for-the-badge)
 ![BME680](https://img.shields.io/badge/BME680-Environmental%20Sensor-blue?style=for-the-badge)
 ![MQTT](https://img.shields.io/badge/MQTT-Protocol-green?style=for-the-badge)
 ![Adafruit IO](https://img.shields.io/badge/Adafruit%20IO-Cloud-orange?style=for-the-badge)
@@ -124,9 +134,9 @@ EnviroSense delivers a reliable environmental monitoring solution that remains p
 # 🔌 Hardware
 
 The hardware combines the ESP32 with the BME680 environmental sensor to continuously monitor atmospheric conditions. An integrated OLED display allows nearby users to view live sensor readings directly from the device, while the ESP32 manages wireless communication, cloud connectivity, email notifications, and power-efficient operation within a compact embedded system.
-
+<div align="center">
 <img src="./Images/Hardware Case/Hardware.jpeg" width="500">
-
+</div>
 ---
 
 # 📐 PCB Design
