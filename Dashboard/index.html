@@ -127,6 +127,42 @@
       min-height: 0;
     }
 
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .range-switcher {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .range-btn {
+      border: 1px solid var(--border-color);
+      background-color: var(--card-bg);
+      color: var(--text-primary);
+      padding: 0.4rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .range-btn:hover {
+      border-color: #38bdf8;
+    }
+
+    .range-btn.active {
+      background-color: #38bdf8;
+      color: white;
+      border-color: #38bdf8;
+    }
+
     .card {
       display: flex;
       flex-direction: column;
@@ -210,6 +246,25 @@
       .chart-card {
         padding: 0.75rem;
         height: 280px;
+      }
+
+      .chart-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .range-switcher {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+      }
+
+      .range-btn {
+        width: 100%;
+        padding: 0.55rem 0.4rem;
+        font-size: 0.75rem;
+        text-align: center;
       }
     }
   </style>
@@ -298,7 +353,14 @@
 
     <!-- Bottom Line Chart -->
     <div class="chart-card">
-      <h3>Chart</h3>
+      <div class="chart-header">
+        <h3>Chart</h3>
+        <div class="range-switcher" role="tablist" aria-label="Chart time range">
+          <button class="range-btn active" data-range="minute">Minute-wise</button>
+          <button class="range-btn" data-range="hour">Hour-wise</button>
+          <button class="range-btn" data-range="day">Day-wise</button>
+        </div>
+      </div>
       <canvas id="multiChart" height="100"></canvas>
     </div>
 
@@ -325,6 +387,7 @@
     };
 
     let chart;
+    let currentRangeMode = 'minute';
 
     function initChart() {
       const ctx = document.getElementById('multiChart').getContext('2d');
@@ -449,11 +512,63 @@
       return values;
     }
 
-    function formatTimestamp(value) {
+    function aggregateFeedData(feedData, mode) {
+      const sortedFeed = sortByTimestamp(feedData || []);
+      const buckets = new Map();
+
+      sortedFeed.forEach(item => {
+        const date = new Date(item.created_at);
+        if (Number.isNaN(date.getTime())) return;
+
+        let bucketKey;
+
+        if (mode === 'hour') {
+          bucketKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-${date.getHours()}`;
+        } else if (mode === 'day') {
+          bucketKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+        } else {
+          bucketKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}`;
+        }
+
+        if (!buckets.has(bucketKey)) {
+          buckets.set(bucketKey, { created_at: date.toISOString(), total: 0, count: 0 });
+        }
+
+        const bucket = buckets.get(bucketKey);
+        bucket.total += parseFloat(item.value);
+        bucket.count += 1;
+      });
+
+      return Array.from(buckets.values())
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        .map(bucket => ({
+          created_at: bucket.created_at,
+          value: bucket.count ? (bucket.total / bucket.count).toFixed(2) : null
+        }));
+    }
+
+    function formatTimestamp(value, mode = 'minute') {
       const date = new Date(value);
 
       if (Number.isNaN(date.getTime())) {
         return value;
+      }
+
+      if (mode === 'hour') {
+        return date.toLocaleString([], {
+          month: 'short',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+
+      if (mode === 'day') {
+        return date.toLocaleString([], {
+          month: 'short',
+          day: '2-digit',
+          year: 'numeric'
+        });
       }
 
       return date.toLocaleString([], {
@@ -463,6 +578,26 @@
         day: '2-digit',
         month: '2-digit'
       });
+    }
+
+    function renderChart(payload) {
+      if (!chart) return;
+
+      const feedNames = ['pressure', 'humidity', 'gas', 'temperature'];
+      const aggregatedSeries = feedNames.map(feed => aggregateFeedData(payload[feed], currentRangeMode));
+      const referenceTimes = [...new Set(
+        aggregatedSeries.flatMap(series => series.map(item => new Date(item.created_at).getTime()))
+      )].sort((a, b) => a - b);
+
+      const labels = referenceTimes.map(time => formatTimestamp(time, currentRangeMode));
+
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = buildAlignedSeries(aggregatedSeries[0], referenceTimes);
+      chart.data.datasets[1].data = buildAlignedSeries(aggregatedSeries[1], referenceTimes);
+      chart.data.datasets[2].data = buildAlignedSeries(aggregatedSeries[2], referenceTimes);
+      chart.data.datasets[3].data = buildAlignedSeries(aggregatedSeries[3], referenceTimes);
+
+      chart.update();
     }
 
     async function loadData() {
@@ -486,20 +621,12 @@
 
     // Update Chart
     if (payload.temperature && payload.temperature.length > 0) {
-      const isMobile = window.matchMedia('(max-width: 640px)').matches;
-      const maxPoints = isMobile ? 10 : 50;
-      const sortedTemperature = sortByTimestamp(payload.temperature);
-      const chartPoints = sortedTemperature.slice(-maxPoints);
-      const referenceTimes = chartPoints.map(d => d.created_at);
-
-      const labels = referenceTimes.map(time => formatTimestamp(time));
-
-      chart.data.labels = labels;
-      chart.data.datasets[0].data = buildAlignedSeries(payload.pressure, referenceTimes);
-      chart.data.datasets[1].data = buildAlignedSeries(payload.humidity, referenceTimes);
-      chart.data.datasets[2].data = buildAlignedSeries(payload.gas, referenceTimes);
-      chart.data.datasets[3].data = chartPoints.map(d => parseFloat(d.value));
-
+      renderChart(payload);
+    } else {
+      chart.data.labels = [];
+      chart.data.datasets.forEach(dataset => {
+        dataset.data = [];
+      });
       chart.update();
     }
 
@@ -537,6 +664,18 @@
         document.getElementById('themeToggleBtn').innerHTML = '☀️ Light';
       }
     })();
+
+    document.querySelectorAll('.range-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        currentRangeMode = button.dataset.range;
+
+        document.querySelectorAll('.range-btn').forEach(btn => {
+          btn.classList.toggle('active', btn === button);
+        });
+
+        loadData();
+      });
+    });
 
     initChart();
     loadData();
